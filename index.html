@@ -1,3 +1,10 @@
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://your-project-id.supabase.co'; https://wpledqyjtxifytwpaeqm.supabase.co
+    const SUPABASE_ANON_KEY = 'your-anon-key';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbGVkcXlqdHhpZnl0d3BhZXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDY3OTAsImV4cCI6MjEwNDI4Mjc5MH0.22on-IzflOk-3jGZaXvfKa9IbhSJX5OGGZ8lxm3xQZ4
+</script>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -947,9 +954,55 @@
         localStorage.setItem('expenditures_v5', JSON.stringify(sampleData));
     }
 
-    function getExpenditures() {
-        return JSON.parse(localStorage.getItem('expenditures_v5')) || [];
+    // 지출 내역 데이터베이스 전체 조회
+async function getExpenditures() {
+    const { data, error } = await supabase
+        .from('expenditures')
+        .select('*')
+        .order('date', { ascending: false });
+
+    if (error) {
+        console.error('지출 내역 로드 실패:', error.message);
+        return [];
     }
+    return data.map(item => ({
+        id: item.id,
+        fundType: item.fund_type,
+        bizName: item.biz_name,
+        date: item.date,
+        summary: item.summary,
+        evidence: item.evidence,
+        totalAmount: item.total_amount,
+        items: item.items
+    }));
+}
+
+// 지출 내역 데이터베이스 저장/수정
+async function saveExpenditureToDB(expData, isEdit = false) {
+    const dbPayload = {
+        id: expData.id,
+        fund_type: expData.fundType,
+        biz_name: expData.bizName,
+        date: expData.date,
+        summary: expData.summary,
+        evidence: expData.evidence,
+        total_amount: expData.totalAmount,
+        items: expData.items
+    };
+
+    if (isEdit) {
+        const { error } = await supabase
+            .from('expenditures')
+            .update(dbPayload)
+            .eq('id', expData.id);
+        if (error) alert('수정 실패: ' + error.message);
+    } else {
+        const { error } = await supabase
+            .from('expenditures')
+            .insert([dbPayload]);
+        if (error) alert('저장 실패: ' + error.message);
+    }
+}
 
     function addItemRow(accountItem = '', vendor = '', detailSummary = '', amount = '') {
         const tbody = document.getElementById('items-tbody');
@@ -1704,6 +1757,17 @@
     renderRecentIncomeTable();
     renderRecentTable();
 </script>
-
+// 수입/지출 데이터베이스 변경 실시간 감지
+supabase
+    .channel('schema-db-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'expenditures' }, () => {
+        renderRecentTable(); // 지출 목록 자동 갱신
+        renderSummary();     // 예산 대조표 자동 갱신
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, () => {
+        renderRecentIncomeTable(); // 입금 목록 자동 갱신
+        renderSummary();           // 예산 대조표 자동 갱신
+    })
+    .subscribe();
 </body>
 </html>
