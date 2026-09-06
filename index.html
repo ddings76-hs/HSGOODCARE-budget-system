@@ -1235,35 +1235,9 @@
         });
 
         let actualTotalIncomeFromTab1 = 0;
-        let selfTotalIncomeFromTab1 = 0;
-
         incList.forEach(item => {
-            const amt = item.totalAmount || 0;
-            actualTotalIncomeFromTab1 += amt;
-            if (item.fundType === '자부담') {
-                selfTotalIncomeFromTab1 += amt;
-            }
+            actualTotalIncomeFromTab1 += (item.totalAmount || 0);
         });
-
-        let currentAllocatedIncomeSum = 0;
-        Object.keys(currentBudgetData).forEach(b => {
-            currentAllocatedIncomeSum += (currentBizIncomeData[b] || 0);
-        });
-
-        if (actualTotalIncomeFromTab1 > currentAllocatedIncomeSum) {
-            const diff = actualTotalIncomeFromTab1 - currentAllocatedIncomeSum;
-            if (selfTotalIncomeFromTab1 > (currentBizIncomeData['운영비(자부담)'] || 0)) {
-                const selfDiff = selfTotalIncomeFromTab1 - (currentBizIncomeData['운영비(자부담)'] || 0);
-                currentBizIncomeData['운영비(자부담)'] = (currentBizIncomeData['운영비(자부담)'] || 0) + selfDiff;
-                const remainDiff = diff - selfDiff;
-                if (remainDiff > 0) {
-                    currentBizIncomeData['인건비'] = (currentBizIncomeData['인건비'] || 0) + remainDiff;
-                }
-            } else {
-                currentBizIncomeData['인건비'] = (currentBizIncomeData['인건비'] || 0) + diff;
-            }
-            localStorage.setItem('bizIncomeData_v9', JSON.stringify(currentBizIncomeData));
-        }
 
         const bizKeys = Object.keys(currentBudgetData);
         const tbody = document.querySelector('#biz-budget-table tbody');
@@ -1283,7 +1257,7 @@
             totalSpent += spent;
 
             const budgetBalance = budget - spent;
-            const actualBalance = bizIncome - spent;
+            const actualBalance = bizIncome - spent; // 실제 남은 잔액 = 실제 입금예산 - 누적 집행액
             const rate = budget > 0 ? ((spent / budget) * 100).toFixed(1) : 0;
 
             const isSelfFund = biz === '운영비(자부담)';
@@ -1345,9 +1319,24 @@
 
     async function recalculateSummaryTotals() {
         const incInputs = document.querySelectorAll('.income-input');
+        const budgetInputs = document.querySelectorAll('.budget-input');
         let currentIncomeSum = 0;
+
+        // 화면 입력값 기반 즉시 실시간 계산
         incInputs.forEach(input => {
-            currentIncomeSum += parseInt(input.value) || 0;
+            const row = input.closest('tr');
+            if (row && !row.style.backgroundColor.includes('edf2f7')) { // 합계행 제외
+                const bizIncome = parseInt(input.value) || 0;
+                const spentText = row.children[3].innerText.replace(/[^0-9-]/g, '');
+                const spent = parseInt(spentText) || 0;
+                const actualBalanceCell = row.querySelector('.actual-balance-cell');
+                
+                if (actualBalanceCell) {
+                    const actualBalance = bizIncome - spent;
+                    actualBalanceCell.innerText = `${actualBalance.toLocaleString()}원`;
+                }
+                currentIncomeSum += bizIncome;
+            }
         });
 
         document.getElementById('sum-total-income').innerText = `${currentIncomeSum.toLocaleString()}원`;
