@@ -10,10 +10,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Supabase 접속 정보 설정
+        // Supabase 접속 정보 및 Client 객체 생성 (변수명 중복 오류 수정)
         const SUPABASE_URL = 'https://wpledqyjtxifytwpaeqm.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbGVkcXlqdHhpZnl0d3BhZXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDY3OTAsImV4cCI6MjEwNDI4Mjc5MH0.22on-IzflOk-3jGZaXvfKa9IbhSJX5OGGZ8lxm3xQZ4';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
     <style>
@@ -571,25 +571,30 @@
 
     /* Supabase 연동 비동기 데이터 API */
     async function getIncomes() {
-        const { data, error } = await supabase
-            .from('incomes')
-            .select('*')
-            .order('date', { ascending: false });
+        try {
+            const { data, error } = await supabaseClient
+                .from('incomes')
+                .select('*')
+                .order('date', { ascending: false });
 
-        if (error) {
-            console.error('입금 내역 조회 오류:', error.message);
+            if (error) {
+                console.error('입금 내역 조회 오류:', error.message);
+                return [];
+            }
+            return data.map(item => ({
+                id: item.id,
+                fundType: item.fund_type,
+                category: item.category,
+                date: item.date,
+                summary: item.summary,
+                evidence: item.evidence,
+                totalAmount: item.total_amount,
+                items: item.items
+            }));
+        } catch (e) {
+            console.error('getIncomes 예외:', e);
             return [];
         }
-        return data.map(item => ({
-            id: item.id,
-            fundType: item.fund_type,
-            category: item.category,
-            date: item.date,
-            summary: item.summary,
-            evidence: item.evidence,
-            totalAmount: item.total_amount,
-            items: item.items
-        }));
     }
 
     async function saveIncomeToDB(incomeData, isEdit = false) {
@@ -605,39 +610,51 @@
         };
 
         if (isEdit) {
-            const { error } = await supabase.from('incomes').update(dbPayload).eq('id', incomeData.id);
-            if (error) alert('수정 실패: ' + error.message);
+            const { error } = await supabaseClient.from('incomes').update(dbPayload).eq('id', incomeData.id);
+            if (error) {
+                alert('수정 실패: ' + error.message);
+                return false;
+            }
         } else {
-            const { error } = await supabase.from('incomes').insert([dbPayload]);
-            if (error) alert('저장 실패: ' + error.message);
+            const { error } = await supabaseClient.from('incomes').insert([dbPayload]);
+            if (error) {
+                alert('저장 실패: ' + error.message);
+                return false;
+            }
         }
+        return true;
     }
 
     async function deleteIncomeFromDB(id) {
-        const { error } = await supabase.from('incomes').delete().eq('id', id);
+        const { error } = await supabaseClient.from('incomes').delete().eq('id', id);
         if (error) alert('삭제 실패: ' + error.message);
     }
 
     async function getExpenditures() {
-        const { data, error } = await supabase
-            .from('expenditures')
-            .select('*')
-            .order('date', { ascending: false });
+        try {
+            const { data, error } = await supabaseClient
+                .from('expenditures')
+                .select('*')
+                .order('date', { ascending: false });
 
-        if (error) {
-            console.error('지출 내역 로드 실패:', error.message);
+            if (error) {
+                console.error('지출 내역 로드 실패:', error.message);
+                return [];
+            }
+            return data.map(item => ({
+                id: item.id,
+                fundType: item.fund_type,
+                bizName: item.biz_name,
+                date: item.date,
+                summary: item.summary,
+                evidence: item.evidence,
+                totalAmount: item.total_amount,
+                items: item.items
+            }));
+        } catch (e) {
+            console.error('getExpenditures 예외:', e);
             return [];
         }
-        return data.map(item => ({
-            id: item.id,
-            fundType: item.fund_type,
-            bizName: item.biz_name,
-            date: item.date,
-            summary: item.summary,
-            evidence: item.evidence,
-            totalAmount: item.total_amount,
-            items: item.items
-        }));
     }
 
     async function saveExpenditureToDB(expData, isEdit = false) {
@@ -653,16 +670,23 @@
         };
 
         if (isEdit) {
-            const { error } = await supabase.from('expenditures').update(dbPayload).eq('id', expData.id);
-            if (error) alert('수정 실패: ' + error.message);
+            const { error } = await supabaseClient.from('expenditures').update(dbPayload).eq('id', expData.id);
+            if (error) {
+                alert('수정 실패: ' + error.message);
+                return false;
+            }
         } else {
-            const { error } = await supabase.from('expenditures').insert([dbPayload]);
-            if (error) alert('저장 실패: ' + error.message);
+            const { error } = await supabaseClient.from('expenditures').insert([dbPayload]);
+            if (error) {
+                alert('저장 실패: ' + error.message);
+                return false;
+            }
         }
+        return true;
     }
 
     async function deleteExpenditureFromDB(id) {
-        const { error } = await supabase.from('expenditures').delete().eq('id', id);
+        const { error } = await supabaseClient.from('expenditures').delete().eq('id', id);
         if (error) alert('삭제 실패: ' + error.message);
     }
 
@@ -757,7 +781,7 @@
                 }
             }
             alert(`${count}건의 입금 내역이 일괄 등록되었습니다.`);
-            renderRecentIncomeTable();
+            await renderRecentIncomeTable();
         };
         reader.readAsText(file, 'EUC-KR');
     }
@@ -799,7 +823,7 @@
                 }
             }
             alert(`${count}건의 지출결의서가 일괄 등록되었습니다.`);
-            renderRecentTable();
+            await renderRecentTable();
         };
         reader.readAsText(file, 'EUC-KR');
     }
@@ -890,11 +914,12 @@
             items: items
         };
 
-        await saveIncomeToDB(incomeData, isEdit);
-        alert(`입금 내역이 저장되었습니다. [입금번호: ${id}]`);
-
-        resetIncomeForm();
-        renderRecentIncomeTable();
+        const success = await saveIncomeToDB(incomeData, isEdit);
+        if (success) {
+            alert(`입금 내역이 저장되었습니다. [입금번호: ${id}]`);
+            resetIncomeForm();
+            await renderRecentIncomeTable();
+        }
     }
 
     async function editIncome(id) {
@@ -923,7 +948,7 @@
     async function deleteIncome(id) {
         if (confirm(`입금번호 [${id}] 내역을 삭제하시겠습니까?`)) {
             await deleteIncomeFromDB(id);
-            renderRecentIncomeTable();
+            await renderRecentIncomeTable();
             alert('삭제되었습니다.');
         }
     }
@@ -1027,19 +1052,19 @@
         return total;
     }
 
-    function switchTab(tabId) {
+    async function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         
         document.getElementById(tabId).classList.add('active');
         event.currentTarget.classList.add('active');
 
-        if(tabId === 'income-input-tab') renderRecentIncomeTable();
-        if(tabId === 'input-tab') renderRecentTable();
-        if(tabId === 'summary-tab') renderSummary();
-        if(tabId === 'income-print-tab') updateIncomeSelector();
-        if(tabId === 'print-tab') updateSelector();
-        if(tabId === 'dashboard-tab') renderCharts();
+        if(tabId === 'income-input-tab') await renderRecentIncomeTable();
+        if(tabId === 'input-tab') await renderRecentTable();
+        if(tabId === 'summary-tab') await renderSummary();
+        if(tabId === 'income-print-tab') await updateIncomeSelector();
+        if(tabId === 'print-tab') await updateSelector();
+        if(tabId === 'dashboard-tab') await renderCharts();
     }
 
     async function generateResolutionNumber(dateString) {
@@ -1094,11 +1119,12 @@
             items: items
         };
 
-        await saveExpenditureToDB(expData, isEdit);
-        alert(`지출결의서가 성공적으로 저장되었습니다.\n[결의번호: ${id}]`);
-
-        resetForm();
-        renderRecentTable();
+        const success = await saveExpenditureToDB(expData, isEdit);
+        if (success) {
+            alert(`지출결의서가 성공적으로 저장되었습니다.\n[결의번호: ${id}]`);
+            resetForm();
+            await renderRecentTable();
+        }
     }
 
     async function editExpenditure(id) {
@@ -1127,7 +1153,7 @@
     async function deleteExpenditure(id) {
         if (confirm(`정말로 결의번호 [${id}] 내역을 삭제하시겠습니까?`)) {
             await deleteExpenditureFromDB(id);
-            renderRecentTable();
+            await renderRecentTable();
             alert('삭제되었습니다.');
         }
     }
@@ -1370,7 +1396,7 @@
         localStorage.setItem('budgetData_v9', JSON.stringify(newBudgetData));
         localStorage.setItem('bizIncomeData_v9', JSON.stringify(newBizIncomeData));
         alert('예산액 및 항목별 실제 입금액 설정이 저장되었습니다.');
-        renderSummary();
+        await renderSummary();
     }
 
     function resetBudgetToDefault() {
@@ -1725,7 +1751,7 @@
     }
 
     // 실시간 DB 변경 감지 연동
-    supabase
+    supabaseClient
         .channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'expenditures' }, () => {
             renderRecentTable();
@@ -1737,11 +1763,16 @@
         })
         .subscribe();
 
-    // 초기 화면 로딩
-    resetIncomeForm();
-    resetForm();
-    renderRecentIncomeTable();
-    renderRecentTable();
+    // 초기 화면 로딩 비동기 안전 처리
+    async function initSystem() {
+        resetIncomeForm();
+        resetForm();
+        await renderRecentIncomeTable();
+        await renderRecentTable();
+        await renderSummary();
+    }
+
+    initSystem();
 </script>
 
 </body>
