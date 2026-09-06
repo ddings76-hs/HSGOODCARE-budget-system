@@ -1,18 +1,21 @@
-<!-- Supabase JS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-    const SUPABASE_URL = 'https://your-project-id.supabase.co'; https://wpledqyjtxifytwpaeqm.supabase.co
-    const SUPABASE_ANON_KEY = 'your-anon-key';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbGVkcXlqdHhpZnl0d3BhZXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDY3OTAsImV4cCI6MjEwNDI4Mjc5MH0.22on-IzflOk-3jGZaXvfKa9IbhSJX5OGGZ8lxm3xQZ4
-</script>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V15</title>
-    <!-- Chart.js 연동 -->
+    <title>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V16 (Supabase 연동)</title>
+    
+    <!-- Supabase JS SDK 및 Chart.js 연동 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Supabase 접속 정보 설정
+        const SUPABASE_URL = 'https://wpledqyjtxifytwpaeqm.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbGVkcXlqdHhpZnl0d3BhZXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDY3OTAsImV4cCI6MjEwNDI4Mjc5MH0.22on-IzflOk-3jGZaXvfKa9IbhSJX5OGGZ8lxm3xQZ4';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
     <style>
         :root {
             --primary-color: #2b6cb0;
@@ -60,7 +63,6 @@
         .items-table th, .items-table td { padding: 8px; border: 1px solid var(--border-color); font-size: 13px; }
         .items-table th { background-color: #edf2f7; text-align: center; }
 
-        /* 검색 바 필터 레이아웃 */
         .filter-bar { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 15px; flex-wrap: wrap; }
         .filter-bar input, .filter-bar select { padding: 6px 10px; font-size: 13px; }
 
@@ -145,7 +147,7 @@
 
 <div class="container">
     <header>
-        <h1>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V15</h1>
+        <h1>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V16</h1>
         
         <div class="backup-control-bar">
             <button class="btn-sm btn-income" onclick="exportData()" style="padding:6px 12px; font-size:13px;">📥 백업 파일 다운로드</button>
@@ -238,7 +240,6 @@
             </div>
         </div>
 
-        <!-- 입금 검색 필터 바 -->
         <div class="filter-bar">
             <strong>🔍 검색 및 필터:</strong>
             <input type="date" id="inc-filter-start" onchange="renderRecentIncomeTable()"> ~
@@ -351,7 +352,6 @@
             </div>
         </div>
 
-        <!-- 지출 검색 필터 바 -->
         <div class="filter-bar">
             <strong>🔍 검색 및 필터:</strong>
             <input type="date" id="exp-filter-start" onchange="renderRecentTable()"> ~
@@ -423,7 +423,7 @@
         </div>
     </div>
 
-    <!-- 4 탭: 입금 확인서 출력 (다중 일괄 선택 인쇄 기능 탑재) -->
+    <!-- 4 탭: 입금 확인서 출력 -->
     <div id="income-print-tab" class="tab-content">
         <div class="print-control-area">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -440,7 +440,7 @@
         <div id="income-print-area"></div>
     </div>
 
-    <!-- 5 탭: 지출 결의서 출력 (다중 일괄 선택 인쇄 기능 탑재) -->
+    <!-- 5 탭: 지출 결의서 출력 -->
     <div id="print-tab" class="tab-content">
         <div class="print-control-area">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -569,34 +569,112 @@
     document.getElementById('expDate').value = todayStr;
     document.getElementById('incomeDate').value = todayStr;
 
-    if (!localStorage.getItem('incomes_v6')) {
-        const sampleIncomes = [
-            {
-                id: "입금-2026-001",
-                fundType: "보조금",
-                category: "보조금",
-                date: "2026-01-15",
-                summary: "2026년도 화성시 보조금 1차 교부금 입금",
-                evidence: "통장입금확인서_0115.pdf",
-                totalAmount: 95000000,
-                items: [
-                    { accountItem: "보조금수입", vendor: "화성시청", detailSummary: "1차 보조금 교부액", amount: 95000000 }
-                ]
-            }
-        ];
-        localStorage.setItem('incomes_v6', JSON.stringify(sampleIncomes));
+    /* Supabase 연동 비동기 데이터 API */
+    async function getIncomes() {
+        const { data, error } = await supabase
+            .from('incomes')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (error) {
+            console.error('입금 내역 조회 오류:', error.message);
+            return [];
+        }
+        return data.map(item => ({
+            id: item.id,
+            fundType: item.fund_type,
+            category: item.category,
+            date: item.date,
+            summary: item.summary,
+            evidence: item.evidence,
+            totalAmount: item.total_amount,
+            items: item.items
+        }));
     }
 
-    function getIncomes() {
-        return JSON.parse(localStorage.getItem('incomes_v6')) || [];
+    async function saveIncomeToDB(incomeData, isEdit = false) {
+        const dbPayload = {
+            id: incomeData.id,
+            fund_type: incomeData.fundType,
+            category: incomeData.category,
+            date: incomeData.date,
+            summary: incomeData.summary,
+            evidence: incomeData.evidence,
+            total_amount: incomeData.totalAmount,
+            items: incomeData.items
+        };
+
+        if (isEdit) {
+            const { error } = await supabase.from('incomes').update(dbPayload).eq('id', incomeData.id);
+            if (error) alert('수정 실패: ' + error.message);
+        } else {
+            const { error } = await supabase.from('incomes').insert([dbPayload]);
+            if (error) alert('저장 실패: ' + error.message);
+        }
     }
 
-    function exportData() {
+    async function deleteIncomeFromDB(id) {
+        const { error } = await supabase.from('incomes').delete().eq('id', id);
+        if (error) alert('삭제 실패: ' + error.message);
+    }
+
+    async function getExpenditures() {
+        const { data, error } = await supabase
+            .from('expenditures')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (error) {
+            console.error('지출 내역 로드 실패:', error.message);
+            return [];
+        }
+        return data.map(item => ({
+            id: item.id,
+            fundType: item.fund_type,
+            bizName: item.biz_name,
+            date: item.date,
+            summary: item.summary,
+            evidence: item.evidence,
+            totalAmount: item.total_amount,
+            items: item.items
+        }));
+    }
+
+    async function saveExpenditureToDB(expData, isEdit = false) {
+        const dbPayload = {
+            id: expData.id,
+            fund_type: expData.fundType,
+            biz_name: expData.bizName,
+            date: expData.date,
+            summary: expData.summary,
+            evidence: expData.evidence,
+            total_amount: expData.totalAmount,
+            items: expData.items
+        };
+
+        if (isEdit) {
+            const { error } = await supabase.from('expenditures').update(dbPayload).eq('id', expData.id);
+            if (error) alert('수정 실패: ' + error.message);
+        } else {
+            const { error } = await supabase.from('expenditures').insert([dbPayload]);
+            if (error) alert('저장 실패: ' + error.message);
+        }
+    }
+
+    async function deleteExpenditureFromDB(id) {
+        const { error } = await supabase.from('expenditures').delete().eq('id', id);
+        if (error) alert('삭제 실패: ' + error.message);
+    }
+
+    /* 백업 / 복원 기능 */
+    async function exportData() {
+        const incomes = await getIncomes();
+        const expenditures = await getExpenditures();
         const backupData = {
-            version: "V15",
+            version: "V16",
             exportDate: new Date().toISOString(),
-            incomes: getIncomes(),
-            expenditures: getExpenditures(),
+            incomes: incomes,
+            expenditures: expenditures,
             budgetData: getBudgetData(),
             bizIncomeData: getBizIncomeData()
         };
@@ -617,42 +695,43 @@
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             try {
                 const data = JSON.parse(e.target.result);
                 if (data.incomes && data.expenditures) {
-                    if (confirm('백업 파일을 복원하시겠습니까? 기존에 등록된 현재 브라우저의 데이터가 백업 파일 내용으로 대체됩니다.')) {
-                        localStorage.setItem('incomes_v6', JSON.stringify(data.incomes));
-                        localStorage.setItem('expenditures_v5', JSON.stringify(data.expenditures));
-                        if(data.budgetData) localStorage.setItem('budgetData_v9', JSON.stringify(data.budgetData));
-                        if(data.bizIncomeData) localStorage.setItem('bizIncomeData_v9', JSON.stringify(data.bizIncomeData));
-
-                        alert('데이터 복원이 성공적으로 완료되었습니다.');
+                    if (confirm('백업 파일을 Supabase DB로 복원하시겠습니까?')) {
+                        for (const inc of data.incomes) {
+                            await saveIncomeToDB(inc, false);
+                        }
+                        for (const exp of data.expenditures) {
+                            await saveExpenditureToDB(exp, false);
+                        }
+                        alert('데이터 복원이 완료되었습니다.');
                         location.reload();
                     }
                 } else {
-                    alert('유효하지 않은 백업 파일 형식입니다.');
+                    alert('유효하지 않은 백업 파일입니다.');
                 }
             } catch (err) {
-                alert('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+                alert('파일 처리 오류: ' + err.message);
             }
         };
         reader.readAsText(file);
     }
 
-    /* V15: CSV 엑셀 일괄 업로드 엔진 */
-    function importCSVIncomes(event) {
+    /* CSV 엑셀 일괄 업로드 */
+    async function importCSVIncomes(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             const lines = e.target.result.split('\n');
             let count = 0;
-            const list = getIncomes();
 
-            lines.forEach((line, idx) => {
-                if (idx === 0 || !line.trim()) return; // 헤더 제외
+            for (let idx = 0; idx < lines.length; idx++) {
+                const line = lines[idx];
+                if (idx === 0 || !line.trim()) continue;
                 const cols = line.split(',');
                 if (cols.length >= 4) {
                     const date = cols[0].trim();
@@ -662,8 +741,8 @@
                     const vendor = cols[4] ? cols[4].trim() : '통장입금';
 
                     if (date && amount > 0) {
-                        const id = generateIncomeNumber(date);
-                        list.push({
+                        const id = await generateIncomeNumber(date);
+                        await saveIncomeToDB({
                             id: id,
                             fundType: category === '자부담' ? '자부담' : '보조금',
                             category: category,
@@ -672,31 +751,29 @@
                             evidence: '통장인쇄내역_일괄등록.csv',
                             totalAmount: amount,
                             items: [{ accountItem: '보조금수입', vendor: vendor, detailSummary: summary, amount: amount }]
-                        });
+                        }, false);
                         count++;
                     }
                 }
-            });
-
-            localStorage.setItem('incomes_v6', JSON.stringify(list));
+            }
             alert(`${count}건의 입금 내역이 일괄 등록되었습니다.`);
             renderRecentIncomeTable();
         };
         reader.readAsText(file, 'EUC-KR');
     }
 
-    function importCSVExpenditures(event) {
+    async function importCSVExpenditures(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             const lines = e.target.result.split('\n');
             let count = 0;
-            const list = getExpenditures();
 
-            lines.forEach((line, idx) => {
-                if (idx === 0 || !line.trim()) return;
+            for (let idx = 0; idx < lines.length; idx++) {
+                const line = lines[idx];
+                if (idx === 0 || !line.trim()) continue;
                 const cols = line.split(',');
                 if (cols.length >= 4) {
                     const date = cols[0].trim();
@@ -706,8 +783,8 @@
                     const vendor = cols[4] ? cols[4].trim() : '거래처';
 
                     if (date && amount > 0) {
-                        const id = generateResolutionNumber(date);
-                        list.push({
+                        const id = await generateResolutionNumber(date);
+                        await saveExpenditureToDB({
                             id: id,
                             fundType: bizName.includes('자부담') ? '자부담' : '보조금',
                             bizName: bizName,
@@ -716,13 +793,11 @@
                             evidence: '통장지출내역_일괄등록.csv',
                             totalAmount: amount,
                             items: [{ accountItem: '사무관리비', vendor: vendor, detailSummary: summary, amount: amount }]
-                        });
+                        }, false);
                         count++;
                     }
                 }
-            });
-
-            localStorage.setItem('expenditures_v5', JSON.stringify(list));
+            }
             alert(`${count}건의 지출결의서가 일괄 등록되었습니다.`);
             renderRecentTable();
         };
@@ -763,10 +838,10 @@
         return total;
     }
 
-    function generateIncomeNumber(dateString) {
+    async function generateIncomeNumber(dateString) {
         const year = new Date(dateString).getFullYear();
         const prefix = `입금-${year}-`;
-        const list = getIncomes();
+        const list = await getIncomes();
         const yearlyItems = list.filter(item => item.id.startsWith(prefix));
         
         let maxSeq = 0;
@@ -778,7 +853,7 @@
         return `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
     }
 
-    function handleIncomeSubmit(e) {
+    async function handleIncomeSubmit(e) {
         e.preventDefault();
         const editId = document.getElementById('income-edit-id').value;
         const date = document.getElementById('incomeDate').value;
@@ -801,45 +876,30 @@
         });
 
         const totalAmount = calculateIncomeTotal();
-        let list = getIncomes();
+        const isEdit = !!editId;
+        const id = isEdit ? editId : await generateIncomeNumber(date);
 
-        if (editId) {
-            const idx = list.findIndex(item => item.id === editId);
-            if (idx !== -1) {
-                list[idx] = {
-                    id: editId,
-                    fundType: fundType,
-                    category: document.getElementById('incomeCategory').value,
-                    date: date,
-                    summary: document.getElementById('incomeSummary').value,
-                    evidence: document.getElementById('incomeEvidence').value,
-                    totalAmount: totalAmount,
-                    items: items
-                };
-                alert(`입금 내역이 수정되었습니다. [입금번호: ${editId}]`);
-            }
-        } else {
-            const id = generateIncomeNumber(date);
-            list.push({
-                id: id,
-                fundType: fundType,
-                category: document.getElementById('incomeCategory').value,
-                date: date,
-                summary: document.getElementById('incomeSummary').value,
-                evidence: document.getElementById('incomeEvidence').value,
-                totalAmount: totalAmount,
-                items: items
-            });
-            alert(`입금 내역이 성공적으로 등록되었습니다. [입금번호: ${id}]`);
-        }
+        const incomeData = {
+            id: id,
+            fundType: fundType,
+            category: document.getElementById('incomeCategory').value,
+            date: date,
+            summary: document.getElementById('incomeSummary').value,
+            evidence: document.getElementById('incomeEvidence').value,
+            totalAmount: totalAmount,
+            items: items
+        };
 
-        localStorage.setItem('incomes_v6', JSON.stringify(list));
+        await saveIncomeToDB(incomeData, isEdit);
+        alert(`입금 내역이 저장되었습니다. [입금번호: ${id}]`);
+
         resetIncomeForm();
         renderRecentIncomeTable();
     }
 
-    function editIncome(id) {
-        const item = getIncomes().find(el => el.id === id);
+    async function editIncome(id) {
+        const list = await getIncomes();
+        const item = list.find(el => el.id === id);
         if (item) {
             document.getElementById('income-edit-id').value = item.id;
             document.querySelector(`input[name="incomeFundType"][value="${item.fundType}"]`).checked = true;
@@ -860,10 +920,9 @@
         }
     }
 
-    function deleteIncome(id) {
+    async function deleteIncome(id) {
         if (confirm(`입금번호 [${id}] 내역을 삭제하시겠습니까?`)) {
-            let list = getIncomes().filter(item => item.id !== id);
-            localStorage.setItem('incomes_v6', JSON.stringify(list));
+            await deleteIncomeFromDB(id);
             renderRecentIncomeTable();
             alert('삭제되었습니다.');
         }
@@ -880,7 +939,6 @@
         document.getElementById('income-cancel-btn').style.display = 'none';
     }
 
-    /* V15: 입금 내역 검색 필터 기능 */
     function resetIncFilter() {
         document.getElementById('inc-filter-start').value = '';
         document.getElementById('inc-filter-end').value = '';
@@ -889,8 +947,8 @@
         renderRecentIncomeTable();
     }
 
-    function renderRecentIncomeTable() {
-        let list = getIncomes().slice().reverse();
+    async function renderRecentIncomeTable() {
+        let list = await getIncomes();
 
         const startDate = document.getElementById('inc-filter-start').value;
         const endDate = document.getElementById('inc-filter-end').value;
@@ -934,75 +992,6 @@
             tbody.appendChild(tr);
         });
     }
-
-    if (!localStorage.getItem('expenditures_v5')) {
-        const sampleData = [
-            {
-                id: "결의-2026-001",
-                fundType: "보조금",
-                bizName: "건강증진",
-                date: "2026-09-01",
-                summary: "건강증진 프로그램 9월 세부 행사 개최 관련 통합 지출",
-                evidence: "카드영수증합철_0901.pdf",
-                totalAmount: 90000,
-                items: [
-                    { accountItem: "사무용품비", vendor: "알파문구", detailSummary: "프로그램 진행용 필기구 구입", amount: 45000 },
-                    { accountItem: "행사 및 홍보비", vendor: "㈜한국인쇄", detailSummary: "행사 안내 현수막 출력비", amount: 45000 }
-                ]
-            }
-        ];
-        localStorage.setItem('expenditures_v5', JSON.stringify(sampleData));
-    }
-
-    // 지출 내역 데이터베이스 전체 조회
-async function getExpenditures() {
-    const { data, error } = await supabase
-        .from('expenditures')
-        .select('*')
-        .order('date', { ascending: false });
-
-    if (error) {
-        console.error('지출 내역 로드 실패:', error.message);
-        return [];
-    }
-    return data.map(item => ({
-        id: item.id,
-        fundType: item.fund_type,
-        bizName: item.biz_name,
-        date: item.date,
-        summary: item.summary,
-        evidence: item.evidence,
-        totalAmount: item.total_amount,
-        items: item.items
-    }));
-}
-
-// 지출 내역 데이터베이스 저장/수정
-async function saveExpenditureToDB(expData, isEdit = false) {
-    const dbPayload = {
-        id: expData.id,
-        fund_type: expData.fundType,
-        biz_name: expData.bizName,
-        date: expData.date,
-        summary: expData.summary,
-        evidence: expData.evidence,
-        total_amount: expData.totalAmount,
-        items: expData.items
-    };
-
-    if (isEdit) {
-        const { error } = await supabase
-            .from('expenditures')
-            .update(dbPayload)
-            .eq('id', expData.id);
-        if (error) alert('수정 실패: ' + error.message);
-    } else {
-        const { error } = await supabase
-            .from('expenditures')
-            .insert([dbPayload]);
-        if (error) alert('저장 실패: ' + error.message);
-    }
-}
 
     function addItemRow(accountItem = '', vendor = '', detailSummary = '', amount = '') {
         const tbody = document.getElementById('items-tbody');
@@ -1053,10 +1042,10 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         if(tabId === 'dashboard-tab') renderCharts();
     }
 
-    function generateResolutionNumber(dateString) {
+    async function generateResolutionNumber(dateString) {
         const year = new Date(dateString).getFullYear();
         const prefix = `결의-${year}-`;
-        const list = getExpenditures();
+        const list = await getExpenditures();
         const yearlyItems = list.filter(item => item.id.startsWith(prefix));
         
         let maxSeq = 0;
@@ -1068,7 +1057,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         return `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
     }
 
-    function handleFormSubmit(e) {
+    async function handleFormSubmit(e) {
         e.preventDefault();
         const editId = document.getElementById('edit-id').value;
         const date = document.getElementById('expDate').value;
@@ -1091,45 +1080,30 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         });
 
         const totalAmount = calculateTotal();
-        let currentList = getExpenditures();
+        const isEdit = !!editId;
+        const id = isEdit ? editId : await generateResolutionNumber(date);
 
-        if (editId) {
-            const index = currentList.findIndex(item => item.id === editId);
-            if (index !== -1) {
-                currentList[index] = {
-                    id: editId,
-                    fundType: fundType,
-                    bizName: document.getElementById('bizName').value,
-                    date: date,
-                    summary: document.getElementById('summary').value,
-                    evidence: document.getElementById('evidence').value,
-                    totalAmount: totalAmount,
-                    items: items
-                };
-                alert(`지출결의서 내역이 정상적으로 수정되었습니다.\n[결의번호: ${editId}]`);
-            }
-        } else {
-            const id = generateResolutionNumber(date);
-            currentList.push({
-                id: id,
-                fundType: fundType,
-                bizName: document.getElementById('bizName').value,
-                date: date,
-                summary: document.getElementById('summary').value,
-                evidence: document.getElementById('evidence').value,
-                totalAmount: totalAmount,
-                items: items
-            });
-            alert(`지출결의서가 성공적으로 등록되었습니다.\n[연도 기준 결의번호: ${id}]`);
-        }
+        const expData = {
+            id: id,
+            fundType: fundType,
+            bizName: document.getElementById('bizName').value,
+            date: date,
+            summary: document.getElementById('summary').value,
+            evidence: document.getElementById('evidence').value,
+            totalAmount: totalAmount,
+            items: items
+        };
 
-        localStorage.setItem('expenditures_v5', JSON.stringify(currentList));
+        await saveExpenditureToDB(expData, isEdit);
+        alert(`지출결의서가 성공적으로 저장되었습니다.\n[결의번호: ${id}]`);
+
         resetForm();
         renderRecentTable();
     }
 
-    function editExpenditure(id) {
-        const item = getExpenditures().find(el => el.id === id);
+    async function editExpenditure(id) {
+        const list = await getExpenditures();
+        const item = list.find(el => el.id === id);
         if (item) {
             document.getElementById('edit-id').value = item.id;
             document.querySelector(`input[name="fundType"][value="${item.fundType}"]`).checked = true;
@@ -1150,10 +1124,9 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         }
     }
 
-    function deleteExpenditure(id) {
+    async function deleteExpenditure(id) {
         if (confirm(`정말로 결의번호 [${id}] 내역을 삭제하시겠습니까?`)) {
-            let list = getExpenditures().filter(item => item.id !== id);
-            localStorage.setItem('expenditures_v5', JSON.stringify(list));
+            await deleteExpenditureFromDB(id);
             renderRecentTable();
             alert('삭제되었습니다.');
         }
@@ -1170,7 +1143,6 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         document.getElementById('cancel-btn').style.display = 'none';
     }
 
-    /* V15: 지출 내역 검색 필터 기능 */
     function resetExpFilter() {
         document.getElementById('exp-filter-start').value = '';
         document.getElementById('exp-filter-end').value = '';
@@ -1179,8 +1151,8 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         renderRecentTable();
     }
 
-    function renderRecentTable() {
-        let list = getExpenditures().slice().reverse();
+    async function renderRecentTable() {
+        let list = await getExpenditures();
 
         const startDate = document.getElementById('exp-filter-start').value;
         const endDate = document.getElementById('exp-filter-end').value;
@@ -1225,9 +1197,9 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         });
     }
 
-    function renderSummary() {
-        const expList = getExpenditures();
-        const incList = getIncomes();
+    async function renderSummary() {
+        const expList = await getExpenditures();
+        const incList = await getIncomes();
         const currentBudgetData = getBudgetData();
         const currentBizIncomeData = getBizIncomeData();
 
@@ -1345,7 +1317,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         }
     }
 
-    function recalculateSummaryTotals() {
+    async function recalculateSummaryTotals() {
         const incInputs = document.querySelectorAll('.income-input');
         let currentIncomeSum = 0;
         incInputs.forEach(input => {
@@ -1354,7 +1326,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
 
         document.getElementById('sum-total-income').innerText = `${currentIncomeSum.toLocaleString()}원`;
 
-        const incList = getIncomes();
+        const incList = await getIncomes();
         let actualTotalIncomeFromTab1 = 0;
         incList.forEach(item => { actualTotalIncomeFromTab1 += item.totalAmount || 0; });
 
@@ -1367,7 +1339,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         }
     }
 
-    function saveBudgetChanges() {
+    async function saveBudgetChanges() {
         const budgetInputs = document.querySelectorAll('.budget-input');
         const incomeInputs = document.querySelectorAll('.income-input');
         
@@ -1385,7 +1357,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
             totalIncomeSum += val;
         });
 
-        const incList = getIncomes();
+        const incList = await getIncomes();
         let actualTotalIncomeFromTab1 = 0;
         incList.forEach(item => { actualTotalIncomeFromTab1 += item.totalAmount || 0; });
 
@@ -1397,7 +1369,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
 
         localStorage.setItem('budgetData_v9', JSON.stringify(newBudgetData));
         localStorage.setItem('bizIncomeData_v9', JSON.stringify(newBizIncomeData));
-        alert('예산액 및 항목별 실제 입금액 설정이 성공적으로 저장되었습니다.');
+        alert('예산액 및 항목별 실제 입금액 설정이 저장되었습니다.');
         renderSummary();
     }
 
@@ -1410,9 +1382,9 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         }
     }
 
-    /* V15: 일괄 결의서 선택 인쇄 대기열 엔진 */
-    function updateIncomeSelector() {
-        const list = getIncomes();
+    /* 일괄 선택 인쇄 기능 */
+    async function updateIncomeSelector() {
+        const list = await getIncomes();
         const container = document.getElementById('income-checkbox-list');
         container.innerHTML = '';
 
@@ -1438,7 +1410,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         renderSelectedIncomes();
     }
 
-    function renderSelectedIncomes() {
+    async function renderSelectedIncomes() {
         const checkedBoxes = document.querySelectorAll('.inc-print-chk:checked');
         const printArea = document.getElementById('income-print-area');
         printArea.innerHTML = '';
@@ -1448,7 +1420,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
             return;
         }
 
-        const allIncomes = getIncomes();
+        const allIncomes = await getIncomes();
         checkedBoxes.forEach(chk => {
             const item = allIncomes.find(el => el.id === chk.value);
             if (item) {
@@ -1539,8 +1511,8 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         });
     }
 
-    function updateSelector() {
-        const list = getExpenditures();
+    async function updateSelector() {
+        const list = await getExpenditures();
         const container = document.getElementById('exp-checkbox-list');
         container.innerHTML = '';
 
@@ -1566,7 +1538,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         renderSelectedExpenditures();
     }
 
-    function renderSelectedExpenditures() {
+    async function renderSelectedExpenditures() {
         const checkedBoxes = document.querySelectorAll('.exp-print-chk:checked');
         const printArea = document.getElementById('print-area');
         printArea.innerHTML = '';
@@ -1576,7 +1548,7 @@ async function saveExpenditureToDB(expData, isEdit = false) {
             return;
         }
 
-        const allExp = getExpenditures();
+        const allExp = await getExpenditures();
         checkedBoxes.forEach(chk => {
             const item = allExp.find(el => el.id === chk.value);
             if (item) {
@@ -1671,8 +1643,8 @@ async function saveExpenditureToDB(expData, isEdit = false) {
     let chartFundPieInst = null;
     let chartBizPieInst = null;
 
-    function renderCharts() {
-        const expList = getExpenditures();
+    async function renderCharts() {
+        const expList = await getExpenditures();
         const budgetData = getBudgetData();
 
         const bizSpentMap = {};
@@ -1752,22 +1724,25 @@ async function saveExpenditureToDB(expData, isEdit = false) {
         });
     }
 
+    // 실시간 DB 변경 감지 연동
+    supabase
+        .channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenditures' }, () => {
+            renderRecentTable();
+            renderSummary();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, () => {
+            renderRecentIncomeTable();
+            renderSummary();
+        })
+        .subscribe();
+
+    // 초기 화면 로딩
     resetIncomeForm();
     resetForm();
     renderRecentIncomeTable();
     renderRecentTable();
 </script>
-// 수입/지출 데이터베이스 변경 실시간 감지
-supabase
-    .channel('schema-db-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'expenditures' }, () => {
-        renderRecentTable(); // 지출 목록 자동 갱신
-        renderSummary();     // 예산 대조표 자동 갱신
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, () => {
-        renderRecentIncomeTable(); // 입금 목록 자동 갱신
-        renderSummary();           // 예산 대조표 자동 갱신
-    })
-    .subscribe();
+
 </body>
 </html>
