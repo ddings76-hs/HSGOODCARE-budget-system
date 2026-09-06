@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V14</title>
+    <title>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V15</title>
     <!-- Chart.js 연동 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -53,6 +53,10 @@
         .items-table th, .items-table td { padding: 8px; border: 1px solid var(--border-color); font-size: 13px; }
         .items-table th { background-color: #edf2f7; text-align: center; }
 
+        /* 검색 바 필터 레이아웃 */
+        .filter-bar { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-bar input, .filter-bar select { padding: 6px 10px; font-size: 13px; }
+
         .btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .btn { background-color: var(--primary-color); color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold; transition: background 0.2s; }
         .btn:hover { background-color: var(--primary-hover); }
@@ -87,16 +91,17 @@
 
         .badge-self { background-color: #dd6b20; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px; }
 
-        /* 통계 대시보드 레이아웃 */
         .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 15px; }
         .chart-card { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .chart-card.full-width { grid-column: span 2; }
         .chart-card h4 { font-size: 15px; color: var(--primary-color); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
         .chart-container { position: relative; height: 320px; width: 100%; }
 
-        .print-control-area { margin-bottom: 20px; }
-        .resolution-select-box { padding: 10px; width: 100%; max-width: 450px; }
-        .print-paper { border: 2px solid #000; padding: 25px; background: #fff; max-width: 800px; margin: 0 auto; color: #000; }
+        .print-control-area { margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .print-list-box { max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); background: #fff; border-radius: 4px; margin: 10px 0; padding: 10px; }
+        .print-list-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
+
+        .print-paper { border: 2px solid #000; padding: 25px; background: #fff; max-width: 800px; margin: 0 auto 30px auto; color: #000; page-break-after: always; }
         
         .print-header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
         .print-title { font-size: 38px; font-weight: bold; letter-spacing: 8px; text-decoration: underline; text-align: center; width: 100%; margin: 10px 0; }
@@ -124,8 +129,8 @@
         @media print {
             body { background: white; padding: 0; }
             .container { box-shadow: none; padding: 0; }
-            .tabs, .form-section, .print-control-area, .btn, header, .backup-control-bar { display: none !important; }
-            .print-paper { border: none; padding: 0; max-width: 100%; }
+            .tabs, .form-section, .print-control-area, .btn, header, .backup-control-bar, .filter-bar { display: none !important; }
+            .print-paper { border: none; padding: 0; max-width: 100%; margin-bottom: 0; }
         }
     </style>
 </head>
@@ -133,7 +138,7 @@
 
 <div class="container">
     <header>
-        <h1>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V14</h1>
+        <h1>화성시장기요양지원센터 맞춤형 수입·지출결의 및 예산관리 시스템 V15</h1>
         
         <div class="backup-control-bar">
             <button class="btn-sm btn-income" onclick="exportData()" style="padding:6px 12px; font-size:13px;">📥 백업 파일 다운로드</button>
@@ -218,7 +223,30 @@
             </div>
         </form>
 
-        <h2 style="font-size: 18px; margin: 30px 0 10px 0;">최근 등록된 입금 내역</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 10px 0;">
+            <h2 style="font-size: 18px;">등록된 입금 내역 목록</h2>
+            <div>
+                <label for="income-csv-input" class="btn-sm btn-income" style="padding:6px 12px; font-size:12px; cursor:pointer;">📊 CSV 엑셀 일괄 등록</label>
+                <input type="file" id="income-csv-input" accept=".csv" onchange="importCSVIncomes(event)" style="display:none;">
+            </div>
+        </div>
+
+        <!-- 입금 검색 필터 바 -->
+        <div class="filter-bar">
+            <strong>🔍 검색 및 필터:</strong>
+            <input type="date" id="inc-filter-start" onchange="renderRecentIncomeTable()"> ~
+            <input type="date" id="inc-filter-end" onchange="renderRecentIncomeTable()">
+            <select id="inc-filter-cat" onchange="renderRecentIncomeTable()">
+                <option value="">-- 전체 입금항목 --</option>
+                <option value="보조금">보조금</option>
+                <option value="이자">이자</option>
+                <option value="자부담대체입금">자부담대체입금</option>
+                <option value="기타">기타</option>
+            </select>
+            <input type="text" id="inc-filter-keyword" placeholder="적요 / 입금처 / 증빙명 검색" oninput="renderRecentIncomeTable()" style="width: 220px;">
+            <button class="btn-sm btn-secondary" onclick="resetIncFilter()">필터 초기화</button>
+        </div>
+
         <table id="recent-income-table">
             <thead>
                 <tr>
@@ -308,7 +336,35 @@
             </div>
         </form>
 
-        <h2 style="font-size: 18px; margin: 30px 0 10px 0;">최근 등록된 지출 내역</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 10px 0;">
+            <h2 style="font-size: 18px;">등록된 지출 내역 목록</h2>
+            <div>
+                <label for="exp-csv-input" class="btn-sm btn-income" style="padding:6px 12px; font-size:12px; cursor:pointer; background:var(--primary-color);">📊 CSV 엑셀 일괄 등록</label>
+                <input type="file" id="exp-csv-input" accept=".csv" onchange="importCSVExpenditures(event)" style="display:none;">
+            </div>
+        </div>
+
+        <!-- 지출 검색 필터 바 -->
+        <div class="filter-bar">
+            <strong>🔍 검색 및 필터:</strong>
+            <input type="date" id="exp-filter-start" onchange="renderRecentTable()"> ~
+            <input type="date" id="exp-filter-end" onchange="renderRecentTable()">
+            <select id="exp-filter-biz" onchange="renderRecentTable()">
+                <option value="">-- 전체 예산항목 --</option>
+                <option value="인건비">인건비</option>
+                <option value="운영비">운영비 (보조금)</option>
+                <option value="운영비(자부담)">운영비(자부담)</option>
+                <option value="교육사업(역량강화)">교육사업(역량강화)</option>
+                <option value="인식개선">인식개선</option>
+                <option value="권익증진">권익증진</option>
+                <option value="건강증진">건강증진</option>
+                <option value="네트워크">네트워크</option>
+                <option value="장기요양기관협력 및 종사자 지원 사업">장기요양기관협력 및 종사자 지원 사업</option>
+            </select>
+            <input type="text" id="exp-filter-keyword" placeholder="적요 / 지출처 / 증빙명 검색" oninput="renderRecentTable()" style="width: 220px;">
+            <button class="btn-sm btn-secondary" onclick="resetExpFilter()">필터 초기화</button>
+        </div>
+
         <table id="recent-list-table">
             <thead>
                 <tr>
@@ -360,171 +416,41 @@
         </div>
     </div>
 
-    <!-- 4 탭: 입금 확인서 출력 -->
+    <!-- 4 탭: 입금 확인서 출력 (다중 일괄 선택 인쇄 기능 탑재) -->
     <div id="income-print-tab" class="tab-content">
         <div class="print-control-area">
-            <label for="income-selector" style="font-size: 15px; font-weight: bold;">조회할 입금 내역 선택:</label>
-            <select id="income-selector" class="resolution-select-box" onchange="loadIncomePaper(this.value)">
-                <option value="">-- 입금 번호를 선택하세요 --</option>
-            </select>
-            <button class="btn btn-income" onclick="window.print()" style="margin-left: 10px; padding: 8px 15px;">이 입금확인서 인쇄하기 (프린트/PDF)</button>
-        </div>
-
-        <div id="income-print-area" class="print-paper">
-            <div class="print-header">
-                <div class="print-title" style="color:#1a4d2e;">입 금 확 인 서</div>
-                <div class="approval-wrapper">
-                    <table class="approval-table">
-                        <tr>
-                            <th rowspan="2" class="approval-title-col">결재</th>
-                            <th class="approval-header-col">담 당</th>
-                            <th class="approval-header-col">대 리</th>
-                            <th class="approval-header-col">센터장</th>
-                        </tr>
-                        <tr>
-                            <td class="approval-body-col">최송아</td>
-                            <td class="approval-body-col">박예원</td>
-                            <td class="approval-body-col">임은숙</td>
-                        </tr>
-                    </table>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>🖨️ 출력할 입금확인서 선택 (다중 선택 및 일괄 인쇄 가능):</strong>
+                <div>
+                    <button class="btn-sm btn-secondary" onclick="selectAllIncomes(true)">전체 선택</button>
+                    <button class="btn-sm btn-secondary" onclick="selectAllIncomes(false)">선택 해제</button>
+                    <button class="btn btn-income" onclick="window.print()" style="margin-left: 10px; padding: 6px 15px; font-size: 13px;">이 입금확인서 인쇄/PDF 저장하기</button>
                 </div>
             </div>
-
-            <table class="print-table">
-                <tr>
-                    <th>입금 번호</th>
-                    <td id="ip-id">--</td>
-                    <th>회계 구분</th>
-                    <td id="ip-fund">--</td>
-                </tr>
-                <tr>
-                    <th>입금 일자</th>
-                    <td id="ip-date">--</td>
-                    <th>입 금 항 목</th>
-                    <td id="ip-cat">--</td>
-                </tr>
-                <tr>
-                    <th>총 입금금액</th>
-                    <td id="ip-amount" colspan="3" style="font-weight: bold; font-size:16px; color:#276749;">--</td>
-                </tr>
-                <tr>
-                    <th>입금 내역 개요</th>
-                    <td id="ip-summary" colspan="3" style="vertical-align: top;">--</td>
-                </tr>
-            </table>
-
-            <div style="margin-top: 15px;">
-                <strong style="font-size: 14px;">[세부 입금 명세]</strong>
-                <table class="print-detail-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">No</th>
-                            <th style="width: 25%;">계정 과목</th>
-                            <th style="width: 25%;">입금처 (지급기관)</th>
-                            <th style="width: 28%;">세부 적요</th>
-                            <th style="width: 17%;" class="text-right">금액</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ip-detail-tbody">
-                        <tr><td colspan="5" class="text-center">선택된 입금 내역이 없습니다.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="evidence-box">
-                <strong>[연동된 입금 증빙 서류 정보]</strong>
-                <p id="ip-evidence" style="margin-top: 5px; color: #4a5568;">선택된 내역이 없습니다.</p>
-            </div>
-
-            <div class="print-footer-logo">
-                <div class="print-footer-text">화성시장기요양지원센터</div>
-            </div>
+            <div class="print-list-box" id="income-checkbox-list"></div>
         </div>
+
+        <div id="income-print-area"></div>
     </div>
 
-    <!-- 5 탭: 지출 결의서 출력 -->
+    <!-- 5 탭: 지출 결의서 출력 (다중 일괄 선택 인쇄 기능 탑재) -->
     <div id="print-tab" class="tab-content">
         <div class="print-control-area">
-            <label for="resolution-selector" style="font-size: 15px; font-weight: bold;">조회할 지출결의서 선택:</label>
-            <select id="resolution-selector" class="resolution-select-box" onchange="loadResolutionPaper(this.value)">
-                <option value="">-- 결의서 번호를 선택하세요 --</option>
-            </select>
-            <button class="btn" onclick="window.print()" style="margin-left: 10px; padding: 8px 15px;">이 결의서 인쇄하기 (프린트/PDF)</button>
-        </div>
-
-        <div id="print-area" class="print-paper">
-            <div class="print-header">
-                <div class="print-title">지 출 결 의 서</div>
-                <div class="approval-wrapper">
-                    <table class="approval-table">
-                        <tr>
-                            <th rowspan="2" class="approval-title-col">결재</th>
-                            <th class="approval-header-col">담 당</th>
-                            <th class="approval-header-col">대 리</th>
-                            <th class="approval-header-col">센터장</th>
-                        </tr>
-                        <tr>
-                            <td class="approval-body-col">최송아</td>
-                            <td class="approval-body-col">박예원</td>
-                            <td class="approval-body-col">임은숙</td>
-                        </tr>
-                    </table>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>🖨️ 출력할 지출결의서 선택 (다중 선택 및 일괄 인쇄 가능):</strong>
+                <div>
+                    <button class="btn-sm btn-secondary" onclick="selectAllExp(true)">전체 선택</button>
+                    <button class="btn-sm btn-secondary" onclick="selectAllExp(false)">선택 해제</button>
+                    <button class="btn" onclick="window.print()" style="margin-left: 10px; padding: 6px 15px; font-size: 13px;">이 지출결의서 인쇄/PDF 저장하기</button>
                 </div>
             </div>
-
-            <table class="print-table">
-                <tr>
-                    <th>결의 번호</th>
-                    <td id="p-id">--</td>
-                    <th>회계 구분</th>
-                    <td id="p-fund">--</td>
-                </tr>
-                <tr>
-                    <th>결의 일자</th>
-                    <td id="p-date">--</td>
-                    <th>예 산 항 목</th>
-                    <td id="p-biz">--</td>
-                </tr>
-                <tr>
-                    <th>총 지출금액</th>
-                    <td id="p-amount" colspan="3" style="font-weight: bold; font-size:16px;">--</td>
-                </tr>
-                <tr>
-                    <th>통합 발의/적요</th>
-                    <td id="p-summary" colspan="3" style="vertical-align: top;">--</td>
-                </tr>
-            </table>
-
-            <div style="margin-top: 15px;">
-                <strong style="font-size: 14px;">[세부 지출 내역 명세]</strong>
-                <table class="print-detail-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">No</th>
-                            <th style="width: 25%;">계정 과목</th>
-                            <th style="width: 25%;">지출처 (지급처)</th>
-                            <th style="width: 28%;">세부 지출 적요</th>
-                            <th style="width: 17%;" class="text-right">금액</th>
-                        </tr>
-                    </thead>
-                    <tbody id="p-detail-tbody">
-                        <tr><td colspan="5" class="text-center">선택된 지출결의서가 없습니다.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="evidence-box">
-                <strong>[연동된 지출 증빙 서류 정보]</strong>
-                <p id="p-evidence" style="margin-top: 5px; color: #4a5568;">선택된 내역이 없습니다.</p>
-            </div>
-
-            <div class="print-footer-logo">
-                <div class="print-footer-text">화성시장기요양지원센터</div>
-            </div>
+            <div class="print-list-box" id="exp-checkbox-list"></div>
         </div>
+
+        <div id="print-area"></div>
     </div>
 
-    <!-- 6 탭: 통계 및 보고서 차트 (신규 고도화) -->
+    <!-- 6 탭: 통계 및 보고서 차트 -->
     <div id="dashboard-tab" class="tab-content">
         <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--primary-color);">■ 2026년도 수입·지출 및 예산집행 시각화 보고서</h3>
         
@@ -660,7 +586,7 @@
 
     function exportData() {
         const backupData = {
-            version: "V14",
+            version: "V15",
             exportDate: new Date().toISOString(),
             incomes: getIncomes(),
             expenditures: getExpenditures(),
@@ -705,6 +631,95 @@
             }
         };
         reader.readAsText(file);
+    }
+
+    /* V15: CSV 엑셀 일괄 업로드 엔진 */
+    function importCSVIncomes(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            let count = 0;
+            const list = getIncomes();
+
+            lines.forEach((line, idx) => {
+                if (idx === 0 || !line.trim()) return; // 헤더 제외
+                const cols = line.split(',');
+                if (cols.length >= 4) {
+                    const date = cols[0].trim();
+                    const category = cols[1].trim() || '보조금';
+                    const summary = cols[2].trim() || '통장 일괄 입금';
+                    const amount = parseInt(cols[3].trim()) || 0;
+                    const vendor = cols[4] ? cols[4].trim() : '통장입금';
+
+                    if (date && amount > 0) {
+                        const id = generateIncomeNumber(date);
+                        list.push({
+                            id: id,
+                            fundType: category === '자부담' ? '자부담' : '보조금',
+                            category: category,
+                            date: date,
+                            summary: summary,
+                            evidence: '통장인쇄내역_일괄등록.csv',
+                            totalAmount: amount,
+                            items: [{ accountItem: '보조금수입', vendor: vendor, detailSummary: summary, amount: amount }]
+                        });
+                        count++;
+                    }
+                }
+            });
+
+            localStorage.setItem('incomes_v6', JSON.stringify(list));
+            alert(`${count}건의 입금 내역이 일괄 등록되었습니다.`);
+            renderRecentIncomeTable();
+        };
+        reader.readAsText(file, 'EUC-KR');
+    }
+
+    function importCSVExpenditures(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            let count = 0;
+            const list = getExpenditures();
+
+            lines.forEach((line, idx) => {
+                if (idx === 0 || !line.trim()) return;
+                const cols = line.split(',');
+                if (cols.length >= 4) {
+                    const date = cols[0].trim();
+                    const bizName = cols[1].trim() || '운영비';
+                    const summary = cols[2].trim() || '통장 일괄 지출';
+                    const amount = parseInt(cols[3].trim()) || 0;
+                    const vendor = cols[4] ? cols[4].trim() : '거래처';
+
+                    if (date && amount > 0) {
+                        const id = generateResolutionNumber(date);
+                        list.push({
+                            id: id,
+                            fundType: bizName.includes('자부담') ? '자부담' : '보조금',
+                            bizName: bizName,
+                            date: date,
+                            summary: summary,
+                            evidence: '통장지출내역_일괄등록.csv',
+                            totalAmount: amount,
+                            items: [{ accountItem: '사무관리비', vendor: vendor, detailSummary: summary, amount: amount }]
+                        });
+                        count++;
+                    }
+                }
+            });
+
+            localStorage.setItem('expenditures_v5', JSON.stringify(list));
+            alert(`${count}건의 지출결의서가 일괄 등록되었습니다.`);
+            renderRecentTable();
+        };
+        reader.readAsText(file, 'EUC-KR');
     }
 
     function addIncomeItemRow(accountItem = '', vendor = '', detailSummary = '', amount = '') {
@@ -858,8 +873,38 @@
         document.getElementById('income-cancel-btn').style.display = 'none';
     }
 
+    /* V15: 입금 내역 검색 필터 기능 */
+    function resetIncFilter() {
+        document.getElementById('inc-filter-start').value = '';
+        document.getElementById('inc-filter-end').value = '';
+        document.getElementById('inc-filter-cat').value = '';
+        document.getElementById('inc-filter-keyword').value = '';
+        renderRecentIncomeTable();
+    }
+
     function renderRecentIncomeTable() {
-        const list = getIncomes().slice().reverse();
+        let list = getIncomes().slice().reverse();
+
+        const startDate = document.getElementById('inc-filter-start').value;
+        const endDate = document.getElementById('inc-filter-end').value;
+        const category = document.getElementById('inc-filter-cat').value;
+        const keyword = document.getElementById('inc-filter-keyword').value.toLowerCase().trim();
+
+        if (startDate) list = list.filter(item => item.date >= startDate);
+        if (endDate) list = list.filter(item => item.date <= endDate);
+        if (category) list = list.filter(item => item.category === category);
+        if (keyword) {
+            list = list.filter(item => {
+                const summaryMatch = item.summary && item.summary.toLowerCase().includes(keyword);
+                const evidenceMatch = item.evidence && item.evidence.toLowerCase().includes(keyword);
+                const itemMatch = item.items && item.items.some(i => 
+                    (i.vendor && i.vendor.toLowerCase().includes(keyword)) || 
+                    (i.detailSummary && i.detailSummary.toLowerCase().includes(keyword))
+                );
+                return summaryMatch || evidenceMatch || itemMatch;
+            });
+        }
+
         const tbody = document.querySelector('#recent-income-table tbody');
         tbody.innerHTML = '';
 
@@ -1072,8 +1117,38 @@
         document.getElementById('cancel-btn').style.display = 'none';
     }
 
+    /* V15: 지출 내역 검색 필터 기능 */
+    function resetExpFilter() {
+        document.getElementById('exp-filter-start').value = '';
+        document.getElementById('exp-filter-end').value = '';
+        document.getElementById('exp-filter-biz').value = '';
+        document.getElementById('exp-filter-keyword').value = '';
+        renderRecentTable();
+    }
+
     function renderRecentTable() {
-        const list = getExpenditures().slice().reverse();
+        let list = getExpenditures().slice().reverse();
+
+        const startDate = document.getElementById('exp-filter-start').value;
+        const endDate = document.getElementById('exp-filter-end').value;
+        const bizName = document.getElementById('exp-filter-biz').value;
+        const keyword = document.getElementById('exp-filter-keyword').value.toLowerCase().trim();
+
+        if (startDate) list = list.filter(item => item.date >= startDate);
+        if (endDate) list = list.filter(item => item.date <= endDate);
+        if (bizName) list = list.filter(item => item.bizName === bizName);
+        if (keyword) {
+            list = list.filter(item => {
+                const summaryMatch = item.summary && item.summary.toLowerCase().includes(keyword);
+                const evidenceMatch = item.evidence && item.evidence.toLowerCase().includes(keyword);
+                const itemMatch = item.items && item.items.some(i => 
+                    (i.vendor && i.vendor.toLowerCase().includes(keyword)) || 
+                    (i.detailSummary && i.detailSummary.toLowerCase().includes(keyword))
+                );
+                return summaryMatch || evidenceMatch || itemMatch;
+            });
+        }
+
         const tbody = document.querySelector('#recent-list-table tbody');
         tbody.innerHTML = '';
 
@@ -1282,115 +1357,263 @@
         }
     }
 
+    /* V15: 일괄 결의서 선택 인쇄 대기열 엔진 */
     function updateIncomeSelector() {
         const list = getIncomes();
-        const selector = document.getElementById('income-selector');
-        selector.innerHTML = '<option value="">-- 입금 번호를 선택하세요 --</option>';
-        list.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.id;
-            opt.innerText = `${item.id} [${item.category} - 총 ${item.totalAmount.toLocaleString()}원]`;
-            selector.appendChild(opt);
-        });
-    }
+        const container = document.getElementById('income-checkbox-list');
+        container.innerHTML = '';
 
-    function loadIncomePaper(id) {
-        if(!id) {
-            document.getElementById('ip-id').innerText = '--';
-            document.getElementById('ip-date').innerText = '--';
-            document.getElementById('ip-fund').innerText = '--';
-            document.getElementById('ip-cat').innerText = '--';
-            document.getElementById('ip-amount').innerText = '--';
-            document.getElementById('ip-summary').innerText = '--';
-            document.getElementById('ip-detail-tbody').innerHTML = '<tr><td colspan="5" class="text-center">선택된 입금 내역이 없습니다.</td></tr>';
-            document.getElementById('ip-evidence').innerText = '선택된 내역이 없습니다.';
+        if(list.length === 0) {
+            container.innerHTML = '<div style="color:#718096; font-size:13px;">등록된 입금 내역이 없습니다.</div>';
+            renderSelectedIncomes();
             return;
         }
 
-        const item = getIncomes().find(el => el.id === id);
-        if(item) {
-            document.getElementById('ip-id').innerText = item.id;
-            document.getElementById('ip-date').innerText = item.date;
-            document.getElementById('ip-fund').innerText = `${item.fundType} 회계`;
-            document.getElementById('ip-cat').innerText = item.category;
-            
-            const koreanAmt = convertToKoreanNumber(item.totalAmount);
-            document.getElementById('ip-amount').innerText = `${koreanAmt} (₩${item.totalAmount.toLocaleString()})`;
-            
-            document.getElementById('ip-summary').innerText = item.summary;
-            document.getElementById('ip-evidence').innerText = `첨부파일: ${item.evidence} (입금 검증 완료)`;
+        list.forEach((item, idx) => {
+            container.innerHTML += `
+                <div class="print-list-item">
+                    <input type="checkbox" class="inc-print-chk" id="inc-chk-${item.id}" value="${item.id}" ${idx === 0 ? 'checked' : ''} onchange="renderSelectedIncomes()">
+                    <label for="inc-chk-${item.id}"><strong>[${item.id}]</strong> ${item.date} | ${item.category} | ${item.summary} (${item.totalAmount.toLocaleString()}원)</label>
+                </div>
+            `;
+        });
+        renderSelectedIncomes();
+    }
 
-            const detailTbody = document.getElementById('ip-detail-tbody');
-            detailTbody.innerHTML = '';
-            item.items.forEach((it, idx) => {
-                detailTbody.innerHTML += `
-                    <tr>
-                        <td class="text-center">${idx + 1}</td>
-                        <td>${it.accountItem}</td>
-                        <td style="font-weight:bold;">${it.vendor || '-'}</td>
-                        <td>${it.detailSummary}</td>
-                        <td class="text-right" style="font-weight:bold;">${it.amount.toLocaleString()}원</td>
-                    </tr>
-                `;
-            });
+    function selectAllIncomes(status) {
+        document.querySelectorAll('.inc-print-chk').forEach(chk => chk.checked = status);
+        renderSelectedIncomes();
+    }
+
+    function renderSelectedIncomes() {
+        const checkedBoxes = document.querySelectorAll('.inc-print-chk:checked');
+        const printArea = document.getElementById('income-print-area');
+        printArea.innerHTML = '';
+
+        if (checkedBoxes.length === 0) {
+            printArea.innerHTML = '<div class="print-paper" style="text-align:center; padding:50px;">선택된 입금확인서가 없습니다. 위의 목록에서 출력할 항목을 선택해주세요.</div>';
+            return;
         }
+
+        const allIncomes = getIncomes();
+        checkedBoxes.forEach(chk => {
+            const item = allIncomes.find(el => el.id === chk.value);
+            if (item) {
+                let detailRows = '';
+                item.items.forEach((it, idx) => {
+                    detailRows += `
+                        <tr>
+                            <td class="text-center">${idx + 1}</td>
+                            <td>${it.accountItem}</td>
+                            <td style="font-weight:bold;">${it.vendor || '-'}</td>
+                            <td>${it.detailSummary}</td>
+                            <td class="text-right" style="font-weight:bold;">${it.amount.toLocaleString()}원</td>
+                        </tr>
+                    `;
+                });
+
+                printArea.innerHTML += `
+                    <div class="print-paper">
+                        <div class="print-header">
+                            <div class="print-title" style="color:#1a4d2e;">입 금 확 인 서</div>
+                            <div class="approval-wrapper">
+                                <table class="approval-table">
+                                    <tr>
+                                        <th rowspan="2" class="approval-title-col">결재</th>
+                                        <th class="approval-header-col">담 당</th>
+                                        <th class="approval-header-col">대 리</th>
+                                        <th class="approval-header-col">센터장</th>
+                                    </tr>
+                                    <tr>
+                                        <td class="approval-body-col">최송아</td>
+                                        <td class="approval-body-col">박예원</td>
+                                        <td class="approval-body-col">임은숙</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <table class="print-table">
+                            <tr>
+                                <th>입금 번호</th>
+                                <td>${item.id}</td>
+                                <th>회계 구분</th>
+                                <td>${item.fundType} 회계</td>
+                            </tr>
+                            <tr>
+                                <th>입금 일자</th>
+                                <td>${item.date}</td>
+                                <th>입 금 항 목</th>
+                                <td>${item.category}</td>
+                            </tr>
+                            <tr>
+                                <th>총 입금금액</th>
+                                <td colspan="3" style="font-weight: bold; font-size:16px; color:#276749;">${convertToKoreanNumber(item.totalAmount)} (₩${item.totalAmount.toLocaleString()})</td>
+                            </tr>
+                            <tr>
+                                <th>입금 내역 개요</th>
+                                <td colspan="3" style="vertical-align: top;">${item.summary}</td>
+                            </tr>
+                        </table>
+
+                        <div style="margin-top: 15px;">
+                            <strong style="font-size: 14px;">[세부 입금 명세]</strong>
+                            <table class="print-detail-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">No</th>
+                                        <th style="width: 25%;">계정 과목</th>
+                                        <th style="width: 25%;">입금처 (지급기관)</th>
+                                        <th style="width: 28%;">세부 적요</th>
+                                        <th style="width: 17%;" class="text-right">금액</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${detailRows}</tbody>
+                            </table>
+                        </div>
+
+                        <div class="evidence-box">
+                            <strong>[연동된 입금 증빙 서류 정보]</strong>
+                            <p style="margin-top: 5px; color: #4a5568;">첨부파일: ${item.evidence} (입금 검증 완료)</p>
+                        </div>
+
+                        <div class="print-footer-logo">
+                            <div class="print-footer-text">화성시장기요양지원센터</div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
     }
 
     function updateSelector() {
         const list = getExpenditures();
-        const selector = document.getElementById('resolution-selector');
-        selector.innerHTML = '<option value="">-- 결의서 번호를 선택하세요 --</option>';
-        list.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.id;
-            opt.innerText = `${item.id} [${item.bizName} - 총 ${item.totalAmount.toLocaleString()}원]`;
-            selector.appendChild(opt);
-        });
-    }
+        const container = document.getElementById('exp-checkbox-list');
+        container.innerHTML = '';
 
-    function loadResolutionPaper(id) {
-        if(!id) {
-            document.getElementById('p-id').innerText = '--';
-            document.getElementById('p-date').innerText = '--';
-            document.getElementById('p-fund').innerText = '--';
-            document.getElementById('p-biz').innerText = '--';
-            document.getElementById('p-amount').innerText = '--';
-            document.getElementById('p-summary').innerText = '--';
-            document.getElementById('p-detail-tbody').innerHTML = '<tr><td colspan="5" class="text-center">선택된 지출결의서가 없습니다.</td></tr>';
-            document.getElementById('p-evidence').innerText = '선택된 내역이 없습니다.';
+        if(list.length === 0) {
+            container.innerHTML = '<div style="color:#718096; font-size:13px;">등록된 지출 내역이 없습니다.</div>';
+            renderSelectedExpenditures();
             return;
         }
 
-        const item = getExpenditures().find(el => el.id === id);
-        if(item) {
-            document.getElementById('p-id').innerText = item.id;
-            document.getElementById('p-date').innerText = item.date;
-            document.getElementById('p-fund').innerText = `${item.fundType} 회계`;
-            document.getElementById('p-biz').innerText = item.bizName;
-            
-            const koreanAmt = convertToKoreanNumber(item.totalAmount);
-            document.getElementById('p-amount').innerText = `${koreanAmt} (₩${item.totalAmount.toLocaleString()})`;
-            
-            document.getElementById('p-summary').innerText = item.summary;
-            document.getElementById('p-evidence').innerText = `첨부파일: ${item.evidence} (검증 완료)`;
-
-            const detailTbody = document.getElementById('p-detail-tbody');
-            detailTbody.innerHTML = '';
-            item.items.forEach((it, idx) => {
-                detailTbody.innerHTML += `
-                    <tr>
-                        <td class="text-center">${idx + 1}</td>
-                        <td>${it.accountItem}</td>
-                        <td style="font-weight:bold;">${it.vendor || '-'}</td>
-                        <td>${it.detailSummary}</td>
-                        <td class="text-right" style="font-weight:bold;">${it.amount.toLocaleString()}원</td>
-                    </tr>
-                `;
-            });
-        }
+        list.forEach((item, idx) => {
+            container.innerHTML += `
+                <div class="print-list-item">
+                    <input type="checkbox" class="exp-print-chk" id="exp-chk-${item.id}" value="${item.id}" ${idx === 0 ? 'checked' : ''} onchange="renderSelectedExpenditures()">
+                    <label for="exp-chk-${item.id}"><strong>[${item.id}]</strong> ${item.date} | ${item.bizName} | ${item.summary} (${item.totalAmount.toLocaleString()}원)</label>
+                </div>
+            `;
+        });
+        renderSelectedExpenditures();
     }
 
-    /* V14: 시각화 차트 대시보드 엔진 */
+    function selectAllExp(status) {
+        document.querySelectorAll('.exp-print-chk').forEach(chk => chk.checked = status);
+        renderSelectedExpenditures();
+    }
+
+    function renderSelectedExpenditures() {
+        const checkedBoxes = document.querySelectorAll('.exp-print-chk:checked');
+        const printArea = document.getElementById('print-area');
+        printArea.innerHTML = '';
+
+        if (checkedBoxes.length === 0) {
+            printArea.innerHTML = '<div class="print-paper" style="text-align:center; padding:50px;">선택된 지출결의서가 없습니다. 위의 목록에서 출력할 항목을 선택해주세요.</div>';
+            return;
+        }
+
+        const allExp = getExpenditures();
+        checkedBoxes.forEach(chk => {
+            const item = allExp.find(el => el.id === chk.value);
+            if (item) {
+                let detailRows = '';
+                item.items.forEach((it, idx) => {
+                    detailRows += `
+                        <tr>
+                            <td class="text-center">${idx + 1}</td>
+                            <td>${it.accountItem}</td>
+                            <td style="font-weight:bold;">${it.vendor || '-'}</td>
+                            <td>${it.detailSummary}</td>
+                            <td class="text-right" style="font-weight:bold;">${it.amount.toLocaleString()}원</td>
+                        </tr>
+                    `;
+                });
+
+                printArea.innerHTML += `
+                    <div class="print-paper">
+                        <div class="print-header">
+                            <div class="print-title">지 출 결 의 서</div>
+                            <div class="approval-wrapper">
+                                <table class="approval-table">
+                                    <tr>
+                                        <th rowspan="2" class="approval-title-col">결재</th>
+                                        <th class="approval-header-col">담 당</th>
+                                        <th class="approval-header-col">대 리</th>
+                                        <th class="approval-header-col">센터장</th>
+                                    </tr>
+                                    <tr>
+                                        <td class="approval-body-col">최송아</td>
+                                        <td class="approval-body-col">박예원</td>
+                                        <td class="approval-body-col">임은숙</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <table class="print-table">
+                            <tr>
+                                <th>결의 번호</th>
+                                <td>${item.id}</td>
+                                <th>회계 구분</th>
+                                <td>${item.fundType} 회계</td>
+                            </tr>
+                            <tr>
+                                <th>결의 일자</th>
+                                <td>${item.date}</td>
+                                <th>예 산 항 목</th>
+                                <td>${item.bizName}</td>
+                            </tr>
+                            <tr>
+                                <th>총 지출금액</th>
+                                <td colspan="3" style="font-weight: bold; font-size:16px;">${convertToKoreanNumber(item.totalAmount)} (₩${item.totalAmount.toLocaleString()})</td>
+                            </tr>
+                            <tr>
+                                <th>통합 발의/적요</th>
+                                <td colspan="3" style="vertical-align: top;">${item.summary}</td>
+                            </tr>
+                        </table>
+
+                        <div style="margin-top: 15px;">
+                            <strong style="font-size: 14px;">[세부 지출 내역 명세]</strong>
+                            <table class="print-detail-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">No</th>
+                                        <th style="width: 25%;">계정 과목</th>
+                                        <th style="width: 25%;">지출처 (지급처)</th>
+                                        <th style="width: 28%;">세부 지출 적요</th>
+                                        <th style="width: 17%;" class="text-right">금액</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${detailRows}</tbody>
+                            </table>
+                        </div>
+
+                        <div class="evidence-box">
+                            <strong>[연동된 지출 증빙 서류 정보]</strong>
+                            <p style="margin-top: 5px; color: #4a5568;">첨부파일: ${item.evidence} (검증 완료)</p>
+                        </div>
+
+                        <div class="print-footer-logo">
+                            <div class="print-footer-text">화성시장기요양지원센터</div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    }
+
     let chartBudgetBarInst = null;
     let chartFundPieInst = null;
     let chartBizPieInst = null;
@@ -1399,7 +1622,6 @@
         const expList = getExpenditures();
         const budgetData = getBudgetData();
 
-        // 사업별 집행액 집계
         const bizSpentMap = {};
         let subsidySpent = 0;
         let selfSpent = 0;
@@ -1418,7 +1640,6 @@
         const spentValues = bizLabels.map(biz => bizSpentMap[biz] || 0);
         const balanceValues = bizLabels.map(biz => Math.max(0, (budgetData[biz] || 0) - (bizSpentMap[biz] || 0)));
 
-        // 1. 사업별 예산 대비 집행/잔액 바 차트
         const ctxBar = document.getElementById('chart-budget-bar').getContext('2d');
         if (chartBudgetBarInst) chartBudgetBarInst.destroy();
         chartBudgetBarInst = new Chart(ctxBar, {
@@ -1440,7 +1661,6 @@
             }
         });
 
-        // 2. 회계 구분별 지출 비중 도넛 차트
         const ctxFundPie = document.getElementById('chart-fund-pie').getContext('2d');
         if (chartFundPieInst) chartFundPieInst.destroy();
         chartFundPieInst = new Chart(ctxFundPie, {
@@ -1458,7 +1678,6 @@
             }
         });
 
-        // 3. 사업항목별 누적 지출 점유율 차트
         const ctxBizPie = document.getElementById('chart-biz-pie').getContext('2d');
         if (chartBizPieInst) chartBizPieInst.destroy();
         chartBizPieInst = new Chart(ctxBizPie, {
