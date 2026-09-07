@@ -307,7 +307,7 @@
                 </div>
                 <div class="form-group">
                     <label for="expDate">지출 결의 일자</label>
-                    <input type="date" id="expDate" required>
+                    <input type="date" id="expDate" required onchange="updateAllItemDates(this.value)">
                 </div>
                 <div class="form-group">
                     <label for="evidence">지출증빙 정보 (파일명/보관위치)</label>
@@ -321,23 +321,24 @@
 
             <div class="items-section">
                 <div class="items-header">
-                    <label style="margin-bottom:0;">■ 세부 지출 항목 및 지출처 입력 (1개 결의서에 여러 항목 추가 가능)</label>
+                    <label style="margin-bottom:0;">■ 세부 지출 항목 및 지출처 입력 (실제 지출일자 지정 가능)</label>
                     <button type="button" class="btn-add-item" onclick="addItemRow()">+ 항목 추가</button>
                 </div>
                 <table class="items-table" id="items-table">
                     <thead>
                         <tr>
-                            <th style="width: 22%;">목/세목 계정과목</th>
-                            <th style="width: 22%;">지출처 (지급처)</th>
-                            <th style="width: 31%;">세부 적요 및 내역</th>
-                            <th style="width: 17%;">금액 (원)</th>
-                            <th style="width: 8%;">삭제</th>
+                            <th style="width: 15%;">실제 지출일자</th>
+                            <th style="width: 18%;">목/세목 계정과목</th>
+                            <th style="width: 20%;">지출처 (지급처)</th>
+                            <th style="width: 28%;">세부 적요 및 내역</th>
+                            <th style="width: 13%;">금액 (원)</th>
+                            <th style="width: 6%;">삭제</th>
                         </tr>
                     </thead>
                     <tbody id="items-tbody"></tbody>
                     <tfoot>
                         <tr style="background:#edf2f7; font-weight:bold;">
-                            <td colspan="3" class="text-right">지출 총액 합계:</td>
+                            <td colspan="4" class="text-right">지출 총액 합계:</td>
                             <td class="text-right" id="total-amount-display" style="color:var(--primary-color);">0 원</td>
                             <td></td>
                         </tr>
@@ -495,8 +496,8 @@
     <!-- 7 탭: 수입·지출 통합 요약 목록 -->
     <div id="combined-summary-tab" class="tab-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="font-size: 18px; color: var(--primary-color);">■ 수입 및 지출 통합 요약 장부</h3>
-            <button class="btn-excel" onclick="exportCombinedExcel()">💚 통합 요약목록 엑셀 다운로드</button>
+            <h3 style="font-size: 18px; color: var(--primary-color);">■ 수입 및 세부 지출 통합 요약 장부 (세부항목별 정밀 내역)</h3>
+            <button class="btn-excel" onclick="exportCombinedExcel()">💚 세부통합장부 엑셀 다운로드</button>
         </div>
 
         <div class="filter-bar">
@@ -513,28 +514,30 @@
                 <option value="보조금">보조금 회계</option>
                 <option value="자부담">자부담 회계</option>
             </select>
-            <input type="text" id="comb-filter-keyword" placeholder="적요 / 입출금처 / 증빙명 검색" oninput="renderCombinedTable()" style="width: 220px;">
+            <input type="text" id="comb-filter-keyword" placeholder="적요 / 거래처 / 계정과목 검색" oninput="renderCombinedTable()" style="width: 220px;">
             <button class="btn-sm btn-secondary" onclick="resetCombFilter()">필터 초기화</button>
         </div>
 
         <table id="combined-summary-table">
             <thead>
                 <tr>
-                    <th style="width: 10%;">구분</th>
-                    <th style="width: 12%;">관리 번호</th>
-                    <th style="width: 10%;">일자</th>
-                    <th style="width: 9%;">회계 구분</th>
-                    <th style="width: 14%;">항목 / 예산구분</th>
-                    <th>통합 적요 및 내용</th>
-                    <th class="text-right" style="width: 12%;">입금액 (원)</th>
-                    <th class="text-right" style="width: 12%;">지출액 (원)</th>
-                    <th class="text-right" style="width: 13%;">누적 잔액 (원)</th>
+                    <th style="width: 7%;">구분</th>
+                    <th style="width: 11%;">관리 번호</th>
+                    <th style="width: 9%;">거래 일자</th>
+                    <th style="width: 8%;">회계 구분</th>
+                    <th style="width: 12%;">예산 / 입금항목</th>
+                    <th style="width: 12%;">계정 과목</th>
+                    <th style="width: 12%;">거래처(지급/입금)</th>
+                    <th>세부 적요 및 내역</th>
+                    <th class="text-right" style="width: 9%;">입금액(원)</th>
+                    <th class="text-right" style="width: 9%;">지출액(원)</th>
+                    <th class="text-right" style="width: 10%;">누적 잔액(원)</th>
                 </tr>
             </thead>
             <tbody></tbody>
             <tfoot>
-                <tr style="background:#edf2f7; font-weight:bold; font-size:14px;">
-                    <td colspan="6" class="text-center">조회 내역 합계</td>
+                <tr style="background:#edf2f7; font-weight:bold; font-size:13px;">
+                    <td colspan="8" class="text-center">조회 세부 내역 합계</td>
                     <td class="text-right" id="comb-total-income" style="color:var(--income-color);">0 원</td>
                     <td class="text-right" id="comb-total-exp" style="color:var(--danger-color);">0 원</td>
                     <td class="text-right" id="comb-final-balance" style="color:var(--primary-color);">0 원</td>
@@ -877,7 +880,7 @@
                             summary: summary,
                             evidence: '통장지출내역_일괄등록.csv',
                             totalAmount: amount,
-                            items: [{ accountItem: '사무관리비', vendor: vendor, detailSummary: summary, amount: amount }]
+                            items: [{ itemDate: date, accountItem: '사무관리비', vendor: vendor, detailSummary: summary, amount: amount }]
                         }, false);
                         count++;
                     }
@@ -1079,9 +1082,11 @@
         });
     }
 
-    function addItemRow(accountItem = '', vendor = '', detailSummary = '', amount = '') {
+    /* 2탭: 지출 세부 항목 추가 (실제 지출일자 필드 포함) */
+    function addItemRow(itemDate = '', accountItem = '', vendor = '', detailSummary = '', amount = '') {
         const tbody = document.getElementById('items-tbody');
         const tr = document.createElement('tr');
+        const defaultDate = itemDate || document.getElementById('expDate').value || todayStr;
 
         let selectHtml = `<select class="item-account" required style="width:100%;">`;
         accountOptions.forEach(opt => {
@@ -1090,6 +1095,7 @@
         selectHtml += `</select>`;
 
         tr.innerHTML = `
+            <td><input type="date" class="item-date" value="${defaultDate}" required style="width:100%;"></td>
             <td>${selectHtml}</td>
             <td><input type="text" class="item-vendor" value="${vendor}" placeholder="예: 알파문구" required style="width:100%;"></td>
             <td><input type="text" class="item-summary" value="${detailSummary}" placeholder="예: 복사용지 구입" required style="width:100%;"></td>
@@ -1098,6 +1104,12 @@
         `;
         tbody.appendChild(tr);
         calculateTotal();
+    }
+
+    function updateAllItemDates(newDate) {
+        document.querySelectorAll('.item-date').forEach(input => {
+            if (!input.value) input.value = newDate;
+        });
     }
 
     function removeItemRow(btn) {
@@ -1159,6 +1171,7 @@
         const items = [];
         itemRows.forEach(row => {
             items.push({
+                itemDate: row.querySelector('.item-date').value || date,
                 accountItem: row.querySelector('.item-account').value,
                 vendor: row.querySelector('.item-vendor').value,
                 detailSummary: row.querySelector('.item-summary').value,
@@ -1203,7 +1216,7 @@
             const tbody = document.getElementById('items-tbody');
             tbody.innerHTML = '';
             item.items.forEach(it => {
-                addItemRow(it.accountItem, it.vendor || '', it.detailSummary, it.amount);
+                addItemRow(it.itemDate || item.date, it.accountItem, it.vendor || '', it.detailSummary, it.amount);
             });
 
             document.getElementById('submit-btn').innerText = '지출결의서 수정 완료';
@@ -1319,7 +1332,7 @@
             totalSpent += spent;
 
             const budgetBalance = budget - spent;
-            const actualBalance = bizIncome - spent; // 실제 남은 잔액 = 실제 입금예산 - 누적 집행액
+            const actualBalance = bizIncome - spent;
             const rate = budget > 0 ? ((spent / budget) * 100).toFixed(1) : 0;
 
             const isSelfFund = biz === '운영비(자부담)';
@@ -1457,44 +1470,84 @@
         }
     }
 
-    /* 7탭: 수입·지출 통합 요약 목록 렌더링 */
+    /* 7탭: 세부 항목 단위 수입·지출 통합 요약 데이터 생성 */
     async function getCombinedList() {
         const incList = await getIncomes();
         const expList = await getExpenditures();
 
         const combined = [];
 
+        // 1. 입금 세부 항목들 분리하여 행 생성
         incList.forEach(inc => {
-            combined.push({
-                type: '입금',
-                id: inc.id,
-                date: inc.date,
-                fundType: inc.fundType,
-                category: inc.category,
-                summary: inc.summary,
-                evidence: inc.evidence,
-                incomeAmount: inc.totalAmount,
-                expenditureAmount: 0,
-                items: inc.items
-            });
+            if (inc.items && inc.items.length > 0) {
+                inc.items.forEach(it => {
+                    combined.push({
+                        type: '입금',
+                        id: inc.id,
+                        date: inc.date,
+                        fundType: inc.fundType,
+                        category: inc.category,
+                        accountItem: it.accountItem || '보조금수입',
+                        vendor: it.vendor || '-',
+                        summary: it.detailSummary || inc.summary,
+                        evidence: inc.evidence,
+                        incomeAmount: parseInt(it.amount) || 0,
+                        expenditureAmount: 0
+                    });
+                });
+            } else {
+                combined.push({
+                    type: '입금',
+                    id: inc.id,
+                    date: inc.date,
+                    fundType: inc.fundType,
+                    category: inc.category,
+                    accountItem: '보조금수입',
+                    vendor: '-',
+                    summary: inc.summary,
+                    evidence: inc.evidence,
+                    incomeAmount: inc.totalAmount || 0,
+                    expenditureAmount: 0
+                });
+            }
         });
 
+        // 2. 지출 세부 항목들 분리하여 행 생성 (개별 지출일자 반영)
         expList.forEach(exp => {
-            combined.push({
-                type: '지출',
-                id: exp.id,
-                date: exp.date,
-                fundType: exp.fundType,
-                category: exp.bizName,
-                summary: exp.summary,
-                evidence: exp.evidence,
-                incomeAmount: 0,
-                expenditureAmount: exp.totalAmount,
-                items: exp.items
-            });
+            if (exp.items && exp.items.length > 0) {
+                exp.items.forEach(it => {
+                    combined.push({
+                        type: '지출',
+                        id: exp.id,
+                        date: it.itemDate || exp.date, // 세부 항목 지출일자 우선 사용
+                        fundType: exp.fundType,
+                        category: exp.bizName,
+                        accountItem: it.accountItem || '사무관리비',
+                        vendor: it.vendor || '-',
+                        summary: it.detailSummary || exp.summary,
+                        evidence: exp.evidence,
+                        incomeAmount: 0,
+                        expenditureAmount: parseInt(it.amount) || 0
+                    });
+                });
+            } else {
+                combined.push({
+                    type: '지출',
+                    id: exp.id,
+                    date: exp.date,
+                    fundType: exp.fundType,
+                    category: exp.bizName,
+                    accountItem: '사무관리비',
+                    vendor: '-',
+                    summary: exp.summary,
+                    evidence: exp.evidence,
+                    incomeAmount: 0,
+                    expenditureAmount: exp.totalAmount || 0
+                });
+            }
         });
 
-        // 날짜순(오름차순) 정렬 후 누적 잔액 계산
+        // 날짜순(오름차순) 정렬 후 누적 잔액 순차 계산
         combined.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         let runningBalance = 0;
@@ -1503,7 +1556,7 @@
             item.runningBalance = runningBalance;
         });
 
-        // 사용자에게는 최신순(내림차순)으로 보여줌
+        // 사용자에게는 최신 날짜가 위로 오도록 내림차순 리턴
         return combined.reverse();
     }
 
@@ -1533,11 +1586,9 @@
             list = list.filter(item => {
                 const summaryMatch = item.summary && item.summary.toLowerCase().includes(keyword);
                 const evidenceMatch = item.evidence && item.evidence.toLowerCase().includes(keyword);
-                const itemMatch = item.items && item.items.some(i => 
-                    (i.vendor && i.vendor.toLowerCase().includes(keyword)) || 
-                    (i.detailSummary && i.detailSummary.toLowerCase().includes(keyword))
-                );
-                return summaryMatch || evidenceMatch || itemMatch;
+                const vendorMatch = item.vendor && item.vendor.toLowerCase().includes(keyword);
+                const accountMatch = item.accountItem && item.accountItem.toLowerCase().includes(keyword);
+                return summaryMatch || evidenceMatch || vendorMatch || accountMatch;
             });
         }
 
@@ -1561,6 +1612,8 @@
                 <td>${item.date}</td>
                 <td>${item.fundType}</td>
                 <td>${item.category}</td>
+                <td>${item.accountItem}</td>
+                <td style="font-weight:bold;">${item.vendor}</td>
                 <td>${item.summary} <span style="font-size:11px; color:#718096;">(📄 ${item.evidence})</span></td>
                 <td class="text-right" style="color:var(--income-color); font-weight:bold;">${item.incomeAmount > 0 ? item.incomeAmount.toLocaleString() + '원' : '-'}</td>
                 <td class="text-right" style="color:var(--danger-color); font-weight:bold;">${item.expenditureAmount > 0 ? item.expenditureAmount.toLocaleString() + '원' : '-'}</td>
@@ -1629,6 +1682,7 @@
                     exportRows.push({
                         "결의번호": exp.id,
                         "결의일자": exp.date,
+                        "실제지출일자": it.itemDate || exp.date,
                         "회계구분": exp.fundType,
                         "예산항목": exp.bizName,
                         "통합적요": exp.summary,
@@ -1643,6 +1697,7 @@
                 exportRows.push({
                     "결의번호": exp.id,
                     "결의일자": exp.date,
+                    "실제지출일자": exp.date,
                     "회계구분": exp.fundType,
                     "예산항목": exp.bizName,
                     "통합적요": exp.summary,
@@ -1704,10 +1759,12 @@
         const exportRows = list.map(item => ({
             "구분": item.type,
             "관리번호": item.id,
-            "일자": item.date,
+            "거래일자": item.date,
             "회계구분": item.fundType,
-            "항목/예산분류": item.category,
-            "통합적요": item.summary,
+            "예산/입금항목": item.category,
+            "계정과목": item.accountItem,
+            "거래처": item.vendor,
+            "세부적요 및 내역": item.summary,
             "증빙서류": item.evidence,
             "입금액(원)": item.incomeAmount,
             "지출액(원)": item.expenditureAmount,
@@ -1716,8 +1773,8 @@
 
         const worksheet = XLSX.utils.json_to_sheet(exportRows);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "수입지출통합요약");
-        XLSX.writeFile(workbook, `수입지출_통합요약장부_${todayStr}.xlsx`);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "수입세부지출통합장부");
+        XLSX.writeFile(workbook, `수입세부지출_통합장부_${todayStr}.xlsx`);
     }
 
     /* 일괄 선택 인쇄 기능 */
